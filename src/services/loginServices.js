@@ -6,12 +6,12 @@ async function loginServices(userName, password) {
     try {
         const user = await loginRepository.loginRepository(userName, password);
 
-        if (!user) {
+        if (!user || !user.id) {
             throw new Error('User not found');
         }
 
-        const accessToken = generateAccessToken(user.userId, userName);
-        await storeAccessToken(user.userId, accessToken);
+        const accessToken = generateAccessToken(user.id, user.userName);
+        await storeAccessToken(user.id, accessToken);
 
         return { success: true, accessToken };
     } catch (error) {
@@ -25,7 +25,12 @@ function generateAccessToken(userId, userName) {
 }
 
 async function storeAccessToken(userId, accessToken) {
-    await loginRepository.createAccessToken(userId, accessToken);
+    try {
+        await loginRepository.createAccessToken(userId, accessToken); // Asegúrate de tener esta función implementada en el repositorio
+    } catch (error) {
+        console.error('Error storing access token:', error);
+        throw new Error('Failed to store access token');
+    }
 }
 
 module.exports = {
