@@ -1,22 +1,14 @@
-const loginServices = require('../services/loginServices')
+const LoginServices = require('../services/loginServices');
 
 async function loginController(req, res) {
-    const { userName, password } = req.body;
-
+    const { username, password } = req.body;
     try {
-        const { success, accessToken, message } = await loginServices.loginServices(userName, password);
-
-        if (success) {
-            res.status(200).json({ success: true, accessToken });
-        } else {
-            res.status(400).json({ success: false, message });
-        }
+        const accessToken = await LoginServices(username, password);
+        res.json({ message: 'inicio de sesion correctamente', accessToken, expireIn: '1h' });
     } catch (error) {
-        console.error('Error logging in:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        console.log('reasd',error)
+        res.status(401).json({ message: error.message });
     }
 }
 
-module.exports = {
-    loginController
-};
+module.exports = { loginController };

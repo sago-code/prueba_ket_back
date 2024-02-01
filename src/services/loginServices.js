@@ -1,38 +1,37 @@
-const jwt = require('jsonwebtoken');
+
+const { LoginRepository, TokenRepository } = require('../repositories/loginRepository');
+const generateAccessToken = require('../utils/tokenUtil');
 const bcrypt = require('bcrypt');
-const loginRepository = require('../repositories/loginRepository');
 
-async function loginServices(userName, password) {
+async function LoginServices(username, password) {
     try {
-        const user = await loginRepository.loginRepository(userName, password);
+        const user = await LoginRepository(username);
+        console.log('Usuario obtenido de la base de datos:', user);
 
-        if (!user || !user.id) {
-            throw new Error('User not found');
+        if (!user) {
+            throw new Error('Usuario no encontrado');
         }
 
-        const accessToken = generateAccessToken(user.id, user.userName);
-        await storeAccessToken(user.id, accessToken);
+        const userPassword = user.map(u => u.password)[0];
+        console.log('Contraseña del usuario obtenida:', userPassword);
 
-        return { success: true, accessToken };
+        console.log('Contraseña ingresada por el usuario:', password);
+
+        const passwordMatch = await bcrypt.compare(password, userPassword);
+
+        if (!passwordMatch) {
+            throw new Error('Contraseña incorrecta');
+        }
+
+        const userId = user.map(u => u.id)[0];
+        console.log('ID del usuario:', userId);
+
+        const accessToken = generateAccessToken(userId);
+        await TokenRepository(userId, accessToken);
+        return accessToken;
     } catch (error) {
-        console.error('Error logging in:', error);
-        return { success: false, message: 'Failed to log in' };
+        throw new Error('Error en el inicio de sesión: ' + error.message);
     }
 }
 
-function generateAccessToken(userId, userName) {
-    return jwt.sign({ userId, userName }, 'your_secret_key', { expiresIn: '1h' });
-}
-
-async function storeAccessToken(userId, accessToken) {
-    try {
-        await loginRepository.createAccessToken(userId, accessToken); // Asegúrate de tener esta función implementada en el repositorio
-    } catch (error) {
-        console.error('Error storing access token:', error);
-        throw new Error('Failed to store access token');
-    }
-}
-
-module.exports = {
-    loginServices
-};
+module.exports = LoginServices;
